@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const treeSchema = new mongoose.Schema({
-    treename: {type: String, required: true},
-    description: {type: String, required: true},
+    treename: String,
+    description: String,
     image: String
-});
+}, { collection: 'TreeShop' });
 
 module.exports = mongoose.model('Tree', treeSchema);

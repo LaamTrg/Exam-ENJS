@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeShop</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <main>
+        <div class="container">
+            <div class="top-section">
+                <h1>Add Tree</h1>
+                <form id="add-tree-form">
+                    <label for="treename">Tree Name:</label>
+                    <input type="text" id="treename" name="treename">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description"></textarea>
+                    <label for="image">Image:</label>
+                    <input type="text" id="image" name="image">
+                    <button type="submit">Add Tree</button>
+                </form>
+                <div class="image-preview">
+                    <h2>Image Preview</h2>
+                    <img id="image-preview" src="" alt="Image Preview">
+                </div>
+            </div>
+            <div class="bottom-section">
+                <h1>All Trees</h1>
+                <div class="tree-list" id="tree-list"></div>
+            </div>
+        </div>
+    </main>
+    <script>
+        document.getElementById('image').addEventListener('input', function() {
+            const imageUrl = this.value;
+            document.getElementById('image-preview').src = imageUrl;
+        });
+
+        async function addTree(e) {
+            e.preventDefault();
+            const treename = document.getElementById('treename').value;
+            const description = document.getElementById('description').value;
+            const image = document.getElementById('image').value;
+            const response = await fetch('/api/trees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ treename, description, image })
+            });
+            if (response.ok) {
+                fetchTrees();
+                document.getElementById('add-tree-form').reset();
+                document.getElementById('image-preview').src = '';
+            } else {
+                const error = await response.json();
+                alert(error.error);
+            }
+        }
+
+        document.getElementById('add-tree-form').addEventListener('submit', addTree);
+
+        async function fetchTrees() {
+            const response = await fetch('/api/trees');
+            const trees = await response.json();
+            const treeList = document.getElementById('tree-list');
+            treeList.innerHTML = '';
+            trees.forEach(tree => {
+                const treeItem = document.createElement('div');
+                treeItem.className = 'tree-item';
+                treeItem.innerHTML = `
+                    <h2>${tree.treename}</h2>
+                    <p>${tree.description}</p>
+                    <img src="${tree.image}" alt="${tree.treename}">
+                    <button onclick="editTree('${tree._id}', '${tree.treename}', '${tree.description}', '${tree.image}')">Edit</button>
+                    <button onclick="deleteTree('${tree._id}')">Delete</button>
+                `;
+                treeList.appendChild(treeItem);
+            });
+        }
+
+        async function editTree(id, treename, description, image) {
+            document.getElementById('treename').value = treename;
+            document.getElementById('description').value = description;
+            document.getElementById('image').value = image;
+            document.getElementById('image-preview').src = image;
+
+            document.getElementById('add-tree-form').onsubmit = async (e) => {
+                e.preventDefault();
+                const updatedTreename = document.getElementById('treename').value;
+                const updatedDescription = document.getElementById('description').value;
+                const updatedImage = document.getElementById('image').value;
+                const response = await fetch(`/api/trees/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ treename: updatedTreename, description: updatedDescription, image: updatedImage })
+                });
+                if (response.ok) {
+                    fetchTrees();
+                    document.getElementById('add-tree-form').reset();
+                    document.getElementById('image-preview').src = '';
+                    document.getElementById('add-tree-form').onsubmit = addTree;
+                } else {
+                    const error = await response.json();
+                    alert(error.error);
+                }
+            };
+        }
+
+        async function deleteTree(id) {
+            await fetch(`/api/trees/${id}`, { method: 'DELETE' });
+            fetchTrees();
+        }
+
+        fetchTrees();
+    </script>
+</body>
+</html>
